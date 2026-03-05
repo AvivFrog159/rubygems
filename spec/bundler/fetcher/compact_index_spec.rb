@@ -18,6 +18,55 @@ RSpec.describe Bundler::Fetcher::CompactIndex do
     allow(compact_index).to receive(:compact_index_client).and_return(compact_index_client)
   end
 
+  describe "#cache_path" do
+    context "when disable_compact_index_cache is not set" do
+      before do
+        allow(Bundler.settings).to receive(:[]).and_return(nil)
+        allow(Bundler.settings).to receive(:[]).with(:disable_compact_index_cache).and_return(false)
+      end
+
+      it "returns the persistent user cache path" do
+        persistent_path = Pathname.new("/home/user/.bundle/cache")
+        allow(Bundler).to receive(:user_cache).and_return(persistent_path)
+
+        expect(compact_index.send(:cache_path)).to eq(persistent_path.join("compact_index", "lsjdf"))
+      end
+    end
+
+    context "when disable_compact_index_cache is set" do
+      let(:tmp_path) { Pathname.new(Dir.mktmpdir) }
+
+      before do
+        allow(Bundler.settings).to receive(:[]).and_return(nil)
+        allow(Bundler.settings).to receive(:[]).with(:disable_compact_index_cache).and_return(true)
+        allow(Bundler).to receive(:tmp).and_return(tmp_path)
+      end
+
+      after { FileUtils.rm_rf(tmp_path) }
+
+      it "returns a temporary directory" do
+        expect(compact_index.send(:cache_path)).to eq(tmp_path)
+      end
+
+      it "does not use the persistent user cache" do
+        persistent_path = Pathname.new("/home/user/.bundle/cache")
+        allow(Bundler).to receive(:user_cache).and_return(persistent_path)
+
+        expect(compact_index.send(:cache_path)).not_to start_with(persistent_path.to_s)
+      end
+
+      it "registers a finalizer to clean up the temporary directory" do
+        expect(ObjectSpace).to receive(:define_finalizer).with(compact_index, anything)
+        compact_index.send(:cache_path)
+      end
+
+      it "memoizes the temp path so the same directory is reused within a session" do
+        expect(Bundler).to receive(:tmp).once.and_return(tmp_path)
+        2.times { compact_index.send(:cache_path) }
+      end
+    end
+  end
+
   describe "#specs_for_names" do
     let(:thread_list) { Thread.list.select {|thread| thread.status == "run" } }
     let(:thread_inspection) { thread_list.map {|th| "  * #{th}:\n    #{th.backtrace_locations.join("\n    ")}" }.join("\n") }

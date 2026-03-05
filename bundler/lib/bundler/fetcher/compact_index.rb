@@ -98,8 +98,18 @@ module Bundler
         end
       end
 
+      def self.cleanup_proc(path)
+        proc { Bundler.rm_rf(path) }
+      end
+
       def cache_path
-        Bundler.user_cache.join("compact_index", remote.cache_slug)
+        @cache_path ||= if Bundler.settings[:disable_compact_index_cache]
+          Bundler.tmp("compact_index.#{remote.cache_slug}").tap do |tmp|
+            ObjectSpace.define_finalizer(self, self.class.cleanup_proc(tmp))
+          end
+        else
+          Bundler.user_cache.join("compact_index", remote.cache_slug)
+        end
       end
 
       def client_fetcher

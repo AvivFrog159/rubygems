@@ -146,6 +146,10 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `disable_checksum_validation` (`BUNDLE_DISABLE_CHECKSUM_VALIDATION`):
    Allow installing gems even if they do not match the checksum provided by
    RubyGems.
+* `disable_compact_index_cache` (`BUNDLE_DISABLE_COMPACT_INDEX_CACHE`):
+   Always fetch compact index files fresh from the server, ignoring any
+   locally cached versions. Existing cache files are not deleted but will
+   not be used.
 * `disable_exec_load` (`BUNDLE_DISABLE_EXEC_LOAD`):
    Stop Bundler from using `load` to launch an executable in-process in
    `bundle exec`.

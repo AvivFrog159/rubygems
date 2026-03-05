@@ -13,6 +13,7 @@ module Bundler
       clean
       deployment
       disable_checksum_validation
+      disable_compact_index_cache
       disable_exec_load
       disable_local_branch_check
       disable_local_revision_check
